@@ -15,10 +15,13 @@ import lombok.Data;
 @Table(name = "customers")
 public class Customer {
 	@Id
-	@GeneratedValue(strategy = GenerationType.AUTO)
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 	private String name;
 	@OneToMany(mappedBy = "customer")
 	private List<Order> order;
+	public Customer(String name) {
+		this.name = name;
+	}
 
 }

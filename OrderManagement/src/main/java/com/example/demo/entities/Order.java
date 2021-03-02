@@ -11,14 +11,20 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
 
 @Entity
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "orders")
 public class Order {
 	@Id
-	@GeneratedValue(strategy = GenerationType.AUTO)
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 	private Long amount;
 	private Long totalPrice;
@@ -27,5 +33,12 @@ public class Order {
 	private Customer customer;
 	@ManyToMany(mappedBy = "orders")
 	private List<Product> products;
+	public Order(Long amount, Long totalPrice, Customer customer) {
+		this.amount = amount;
+		this.totalPrice = totalPrice;
+		this.customer = customer;
+	}
+	
+	
 
 }
