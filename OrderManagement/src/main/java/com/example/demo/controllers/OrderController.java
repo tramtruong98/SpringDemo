@@ -11,24 +11,35 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.demo.DTO.OrderDetail;
 import com.example.demo.entities.Order;
+import com.example.demo.entities.Product;
 import com.example.demo.services.OrderService;
 
+
 @RestController
+@RequestMapping("api/orders")
 public class OrderController {
 	@Autowired
 	private OrderService orderService;
 
-	@GetMapping("/orders")
-	public ResponseEntity<List<Order>> getAllBooks() {
-		List<Order> orders = orderService.getListOrder();
+	@GetMapping("")
+	public ResponseEntity<List<OrderDetail>> getAllBooks() {
+		List<OrderDetail> orders = orderService.getListOrders();
 		return ResponseEntity.status(HttpStatus.OK).body(orders);
 	}
+	
+	@GetMapping("/products/{id}")
+	public ResponseEntity<List<Product>> getListProduct(@PathVariable Long id) {
+		List<Product> products = orderService.getProduct(id);
+		return ResponseEntity.status(HttpStatus.OK).body(products);
+	}
 
-	@GetMapping("/order/{id}")
-	public ResponseEntity<Order> findOrderById(@PathVariable Long id) {
+	@GetMapping("/{id}")
+	public ResponseEntity<OrderDetail> findOrderById(@PathVariable Long id) {
 		return ResponseEntity.status(HttpStatus.OK).body(orderService.getOrderById(id));
 	}
 
@@ -37,23 +48,23 @@ public class OrderController {
 		return orderService.count();
 	}
 
-	@DeleteMapping("/order/{id}")
+	@DeleteMapping("/{id}")
 	public ResponseEntity<String> deleteOrderById(@PathVariable Long id) {
 		orderService.deleteById(id);
 		return ResponseEntity.ok("delete user successfully");
 	}
 
 	@PostMapping("/create")
-	public ResponseEntity<Order> createOrder(@RequestBody Order order) {
-		Order newOrder = orderService.createOrder(order);
-		return ResponseEntity.ok().body(newOrder);
+	public ResponseEntity<String> createOrder(@RequestBody OrderDetail order) {
+		orderService.addOrder(order);
+		return ResponseEntity.ok("create order successfully");
 	}
 
 	@PutMapping("/update/{id}")
-	public ResponseEntity<Order> updateOrder(@RequestBody Order order, @PathVariable Long id) {
+	public ResponseEntity<String> updateOrder(@RequestBody OrderDetail order, @PathVariable Long id) {
 
-		Order editOrder = orderService.updateOrder(order, id);
-		return ResponseEntity.ok(editOrder);
+		orderService.updateOrder(order, id);
+		return ResponseEntity.ok("update order successfully");
 	}
 
 }

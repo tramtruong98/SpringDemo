@@ -6,10 +6,14 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -21,10 +25,14 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import com.example.demo.DTO.OrderDetail;
+import com.example.demo.DTO.ProductDetail;
 import com.example.demo.controllers.OrderController;
 import com.example.demo.entities.Customer;
 import com.example.demo.entities.Order;
+import com.example.demo.entities.Product;
 import com.example.demo.services.OrderService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @WebMvcTest(OrderController.class)
@@ -38,12 +46,15 @@ public class OrderControllerTest {
 
 	@Test
 	public void testGetAllOrder() {
-		List<Order> orders = new ArrayList<>();
+		List<OrderDetail> orders = new ArrayList<>();
 		Customer customer = new Customer("tram");
-		orders.add(new Order(1l, 2l, 200l, customer, null));
-		orders.add(new Order(1l, 2l, 300l, customer, null));
-		Mockito.when(orderService.getListOrder()).thenReturn(orders);
-		String url = "/orders";
+		List<ProductDetail> products = new ArrayList<>();
+		products.add(new ProductDetail(1l, "shirt"));
+		products.add(new ProductDetail(2l, "shirt"));
+		orders.add(new OrderDetail(1l, 2l, 200l, customer.getId(), customer.getName(), products));
+		orders.add(new OrderDetail(2l, 2l, 300l, customer.getId(), customer.getName(), products));
+		Mockito.when(orderService.getListOrders()).thenReturn(orders);
+		String url = "/api/orders";
 		try {
 			MvcResult result = mockMvc.perform(get(url)).andExpect(status().isOk()).andReturn();
 			String actualJsonResponse = result.getResponse().getContentAsString();
@@ -58,45 +69,73 @@ public class OrderControllerTest {
 	@Test
 	public void testCreateOrder() throws Exception {
 		Customer customer = new Customer("tram");
-//		Order newOrder = new Order(1l, 2l, 200l, customer, null);
-//		Order savedOrder = new Order(1l, 2l, 200l, customer, null);
-//		Mockito.when(orderService.createOrder(newOrder)).thenReturn(savedOrder);
-//		String url = "/create";
-//		//String expectedJsonResult = objectMapper.writeValueAsString(savedOrder);
-//		mockMvc.perform(post(url).contentType("application/json").content(objectMapper.writeValueAsString(newOrder)).with(csrf()))
-//				.andExpect(status().isOk());
-//		//assertThat(objectMapper.writeValueAsString(newOrder)).isEqualToIgnoringWhitespace(expectedJsonResult);
-		   String url = "/create";
-		   Order newOrder = new Order(1l, 2l, 200l, customer, null);
-		   
-		   String inputJson = objectMapper.writeValueAsString(newOrder);
-		   MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.post(url)
-		      .contentType(MediaType.APPLICATION_JSON_VALUE).content(inputJson)).andReturn();
-		   
-		   int status = mvcResult.getResponse().getStatus();
-		   assertEquals(201, status);
-		   String content = mvcResult.getResponse().getContentAsString();
-		   assertEquals(content, "create successfully");
+		List<ProductDetail> productDetails = new ArrayList<>();
+		productDetails.add(new ProductDetail(1l, "shirt"));
+		productDetails.add(new ProductDetail(2l, "skirt"));
+		List<Product> products = new ArrayList<>();
+		products.add(new Product(1l, "shirt", 20l, 100l));
+		products.add(new Product(2l, "skirt", 20l, 200l));
+		OrderDetail orderDetail = new OrderDetail(1l, 2l, 200l, customer.getId(), customer.getName(), productDetails);
+		Order order = new Order(2l, 200l);
+		order.setCustomer(customer);
+		order.setProducts(products);
+		Mockito.when(orderService.addOrder(orderDetail)).thenReturn(order);
+		String url = "/api/orders/create";
+		MvcResult result = mockMvc.perform(
+				post(url).contentType("application/json").content(objectMapper.writeValueAsString(order)).with(csrf()))
+				.andExpect(status().isOk()).andReturn();
+		String content = result.getResponse().getContentAsString();
+		assertEquals(content, "create order successfully");
 
 	}
-	
+
+	@Test
+	public void testUpdateOrder() throws JsonProcessingException, Exception {
+		Long id = 1l;
+		Customer customer = new Customer("tram");
+		List<ProductDetail> productDetails = new ArrayList<>();
+		productDetails.add(new ProductDetail(1l, "shirt"));
+		productDetails.add(new ProductDetail(2l, "skirt"));
+		List<Product> products = new ArrayList<>();
+		products.add(new Product(1l, "shirt", 20l, 100l));
+		products.add(new Product(2l, "skirt", 20l, 200l));
+		OrderDetail orderDetail = new OrderDetail(1l, 2l, 300l, customer.getId(), customer.getName(), productDetails);
+		Order order = new Order(2l, 200l);
+		order.setCustomer(customer);
+		order.setProducts(products);
+		Mockito.when(orderService.updateOrder(orderDetail, id)).thenReturn(order);
+		String url = "/api/orders/update/" + id;
+		MvcResult result = mockMvc.perform(
+				put(url).contentType("application/json").content(objectMapper.writeValueAsString(order)).with(csrf()))
+				.andExpect(status().isOk()).andReturn();
+		String content = result.getResponse().getContentAsString();
+		assertEquals(content, "update order successfully");
+	}
+
 	@Test
 	public void testDelete() throws Exception {
 		Long id = 1l;
 		Mockito.doNothing().when(orderService).deleteById(id);
 		String url = "/order/" + id;
 		mockMvc.perform(delete(url)).andExpect(status().isOk());
-		
+
 	}
-	
+
 	@Test
 	public void testGetOrderById() throws Exception {
-		Customer customer = new Customer("tram");
-		Order order = new Order(1l, 2l, 200l, customer, null);
 		Long id = 1l;
+		Customer customer = new Customer("tram");
+		List<ProductDetail> products = new ArrayList<>();
+		products.add(new ProductDetail(1l, "shirt"));
+		products.add(new ProductDetail(2l, "shirt"));
+		OrderDetail order = new OrderDetail(1l, 2l, 200l, customer.getId(), customer.getName(), products);
 		Mockito.when(orderService.getOrderById(id)).thenReturn(order);
-		String url = "/order/" + id;
-		mockMvc.perform(delete(url)).andExpect(status().isOk());
-		
+		String url = "/api/orders/" + id;
+		MvcResult result = mockMvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+		String actualJsonResponse = result.getResponse().getContentAsString();
+		System.out.println(actualJsonResponse);
+		String expectedJsonResult = objectMapper.writeValueAsString(order);
+		assertThat(actualJsonResponse).isEqualToIgnoringWhitespace(expectedJsonResult);
+
 	}
 }
